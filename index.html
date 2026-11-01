@@ -196,11 +196,11 @@ const pct = (a,b) => b ? Math.round(a/b*100) : 0;
 
 /* ---------- 状態 ---------- */
 let tab = "home";
-let session = null;   // {ids, idx, correct, answered, wrongIds, label, done}
+let session = null;   // {ids, idx, correct, cur:{idx,order,picked}, wrongIds, label, done}
 
 function startSet(pool, label){
   if(!pool.length){ toast("出題できる問題がありません"); return; }
-  session = {ids: pickSet(pool, SET_SIZE), idx:0, correct:0, answered:false, wrongIds:[], label, done:false};
+  session = {ids: pickSet(pool, SET_SIZE), idx:0, correct:0, cur:null, wrongIds:[], label, done:false};
   go("quiz");
 }
 function go(t){
@@ -241,10 +241,24 @@ function viewHome(){
 }
 
 /* ---------- クイズ ---------- */
+function shuffled4(n){
+  const a = Array.from({length:n}, (_,i) => i);
+  for(let i=n-1;i>0;i--){ const j = Math.floor(Math.random()*(i+1)); [a[i],a[j]] = [a[j],a[i]]; }
+  return a;
+}
+// 現在の設問の状態（表示順・選択した表示位置）。タブ往復しても保持する
+function curState(){
+  if(!session.cur || session.cur.idx !== session.idx){
+    const q = byId[session.ids[session.idx]];
+    session.cur = {idx: session.idx, order: shuffled4(q.choices.length), picked: -1};
+  }
+  return session.cur;
+}
 function viewQuiz(){
   if(!session){ viewHome(); return; }
   if(session.done){ viewResult(); return; }
   const q = byId[session.ids[session.idx]];
+  const cur = curState();
   const total = session.ids.length;
   const card = h("div",{class:"card"});
   card.append(
@@ -258,31 +272,40 @@ function viewQuiz(){
     img.addEventListener("error", () => img.remove());   // 画像は補助。失敗しても設問は成立
     card.append(img);
   }
-  const btns = q.choices.map((c,i) => h("button",{class:"choice",type:"button",onclick:()=>answer(i,btns,card,q)},c));
+  // 表示位置 k には元の選択肢 cur.order[k] を出す。正解の表示位置は元の answer の移動先
+  const btns = cur.order.map((orig,k) => h("button",{class:"choice",type:"button",onclick:()=>answer(k)},q.choices[orig]));
   card.append(...btns);
   $app.append(card);
+  if(cur.picked >= 0) showResult(card, btns, q, cur);    // 解答済みで戻った場合は施錠表示を復元
 }
-function answer(i, btns, card, q){
-  if(session.answered) return;
-  session.answered = true;
-  const ok = i === q.answer;
-  if(ok) session.correct++; else session.wrongIds.push(q.id);
-  record(q.id, ok);
+function showResult(card, btns, q, cur){
+  const correctPos = cur.order.indexOf(q.answer);
+  const ok = cur.picked === correctPos;
   btns.forEach((b,k) => {
     b.disabled = true;
-    if(k === q.answer) b.classList.add("ok");
-    else if(k === i) b.classList.add("ng");
+    if(k === correctPos) b.classList.add("ok");
+    else if(k === cur.picked) b.classList.add("ng");
     else b.classList.add("dim");
   });
   const last = session.idx === session.ids.length - 1;
   card.append(
     h("div",{class:"explain" + (ok?"":" ng")},h("strong",null,ok?"⭕ 正解！":"❌ 不正解（正解：" + q.choices[q.answer] + "）"),q.explain),
     h("button",{class:"btn",type:"button",onclick:()=>{
-      session.answered = false;
       if(last) session.done = true; else session.idx++;
+      session.cur = null;
       render(); window.scrollTo(0,0);
     }},last ? "結果を見る" : "次の問題へ")
   );
+}
+function answer(k){
+  const cur = curState();
+  if(cur.picked >= 0) return;
+  const q = byId[session.ids[session.idx]];
+  cur.picked = k;
+  const ok = k === cur.order.indexOf(q.answer);
+  if(ok) session.correct++; else session.wrongIds.push(q.id);
+  record(q.id, ok);
+  render();   // 同じ状態から施錠表示を描画（再シャッフルしない）
 }
 function viewResult(){
   const n = session.ids.length;
