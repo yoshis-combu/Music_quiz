@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>文楽クイズ（中3 音楽 定期試験対策）</title>
+<style>
+:root{
+  --bg:#0f1220;--card:#181c30;--card2:#20253d;--text:#eceefb;--sub:#9aa1c4;--line:#2c3252;
+  --ok:#34d399;--ng:#f87171;--shadow:0 6px 24px rgba(0,0,0,.35);
+  --grad:linear-gradient(135deg,#8b5cf6,#06b6d4);
+}
+@media (prefers-color-scheme: light){
+  :root{--bg:#f3f4fb;--card:#fff;--card2:#f0f1fa;--text:#1d2036;--sub:#667;--line:#dfe2f2;--shadow:0 6px 24px rgba(60,60,120,.12);}
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;overflow-x:hidden}
+body{background:var(--bg);color:var(--text);font-family:"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP",system-ui,sans-serif;line-height:1.6;padding-bottom:84px}
+main{max-width:640px;margin:0 auto;padding:16px 14px}
+h1{font-size:1.4rem;margin:.2em 0 .1em;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+h2{font-size:1.15rem;margin:.2em 0 .6em}
+.card{background:var(--card);border-radius:16px;box-shadow:var(--shadow);padding:16px;margin:0 0 14px;border:1px solid var(--line)}
+.sub{color:var(--sub);font-size:.88rem}
+.btn{display:block;width:100%;border:0;border-radius:12px;padding:14px 16px;font:inherit;font-weight:700;color:#fff;background:var(--grad);cursor:pointer;margin-top:10px}
+.btn.sec{background:var(--card2);color:var(--text);border:1px solid var(--line)}
+.btn.danger{background:var(--ng);color:#fff}
+.row{display:flex;gap:10px}
+.stats3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.stat{background:var(--card2);border-radius:12px;padding:10px;text-align:center;font-size:.85rem}
+.stat b{display:block;font-size:1.3rem}
+.bar{height:8px;background:var(--card2);border-radius:99px;overflow:hidden;margin:6px 0 12px}
+.bar i{display:block;height:100%;background:var(--grad)}
+.cat{display:inline-block;font-size:.75rem;padding:2px 10px;border-radius:99px;background:var(--card2);color:var(--sub);margin-bottom:6px}
+.q{font-size:1.1rem;font-weight:700;margin:4px 0 10px}
+.fig{display:block;max-width:100%;height:auto;border-radius:12px;margin:0 auto 12px;border:1px solid var(--line)}
+.choice{display:block;width:100%;text-align:left;font:inherit;color:var(--text);background:var(--card2);border:2px solid var(--line);border-radius:12px;padding:12px 14px;margin-top:8px;cursor:pointer;overflow-wrap:anywhere}
+.choice:disabled{cursor:default}
+.choice.ok{border-color:var(--ok);background:rgba(52,211,153,.18)}
+.choice.ng{border-color:var(--ng);background:rgba(248,113,113,.18)}
+.choice.dim{opacity:.45}
+.explain{margin-top:12px;padding:12px;border-radius:12px;background:var(--card2);border-left:4px solid var(--ok)}
+.explain.ng{border-left-color:var(--ng)}
+.explain strong{display:block;margin-bottom:2px}
+table{width:100%;border-collapse:collapse;font-size:.88rem}
+th,td{padding:8px 6px;border-bottom:1px solid var(--line);text-align:right;vertical-align:top}
+th:first-child,td:first-child{text-align:left;overflow-wrap:anywhere}
+.tablewrap{overflow-x:auto}
+.empty{text-align:center;color:var(--sub);padding:24px 8px}
+.rate-hi{color:var(--ng);font-weight:700}
+nav{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:center;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom);z-index:20}
+nav .in{display:flex;width:100%;max-width:640px}
+nav button{flex:1;border:0;background:none;color:var(--sub);font:inherit;font-size:.78rem;padding:8px 2px 10px;cursor:pointer}
+nav button .ic{display:block;font-size:1.3rem;line-height:1.2}
+nav button.on{color:var(--text);font-weight:700}
+#toast{position:fixed;top:12px;left:50%;transform:translate(-50%,-80px);max-width:90vw;background:var(--grad);color:#fff;padding:10px 18px;border-radius:99px;box-shadow:var(--shadow);transition:transform .25s;z-index:30;font-size:.9rem}
+#toast.show{transform:translate(-50%,0)}
+</style>
+</head>
+<body>
+<div id="toast" role="status" aria-live="polite"></div>
+<main id="app"></main>
+<nav><div class="in">
+  <button data-tab="home"><span class="ic">🏠</span>ホーム</button>
+  <button data-tab="quiz"><span class="ic">📝</span>クイズ</button>
+  <button data-tab="review"><span class="ic">🔁</span>復習</button>
+  <button data-tab="stats"><span class="ic">📊</span>統計</button>
+</div></nav>
+
+<script>
+"use strict";
+const QUESTIONS = [
+{"id":"q_born","cat":"基礎","q":"文楽（人形浄瑠璃）が生まれた時代と場所は？","choices":["17世紀末の大坂","19世紀の江戸","16世紀の京都","18世紀の長崎"],"answer":0,"explain":"文楽は17世紀末に大坂（現在の大阪）で生まれた日本の伝統的な人形芝居です。"},
+{"id":"q_alias","cat":"基礎","q":"文楽の別名（正式な呼び方）は？","choices":["人形浄瑠璃","能楽","歌舞伎","雅楽"],"answer":0,"explain":"文楽は「人形浄瑠璃」とも呼ばれます。"},
+{"id":"q_three","cat":"基礎","q":"文楽を一体となって表現する三者は？","choices":["太夫・三味線・人形","笛・太鼓・箏","指揮者・歌手・楽団","役者・大道具・囃子"],"answer":0,"explain":"太夫・三味線・人形が一体となって表現します。"},
+{"id":"q_unesco","cat":"基礎","q":"文楽が登録されている世界的な枠組みは？","choices":["ユネスコ無形文化遺産","世界自然遺産","国宝建造物","ラムサール条約"],"answer":0,"explain":"能楽や歌舞伎などとともにユネスコ無形文化遺産に登録されています。"},
+{"id":"q_joruri","cat":"基礎","q":"「浄瑠璃」とはどんな音楽か？","choices":["三味線を伴い、物語を語る音楽","笛と太鼓だけで舞う音楽","西洋の歌曲","手拍子だけの童謡"],"answer":0,"explain":"浄瑠璃は三味線を伴い、物語を語る音楽のことです。"},
+{"id":"q_tayu_role","cat":"太夫","q":"物語のセリフや地の文を1人で語る担当は？","choices":["太夫","三味線弾き","主遣い","囃子方"],"answer":0,"explain":"太夫が登場人物のセリフと地の文を1人で語ります。"},
+{"id":"q_jinobun","cat":"太夫","q":"「地の文」とは何を描写した文章か？","choices":["情景や心理","楽譜の記号","舞台の寸法","衣装の値段"],"answer":0,"explain":"地の文は情景や心理を描写した文章です。"},
+{"id":"q_yukahon","cat":"太夫","q":"太夫が舞台で語るときに用いる台本の名称は？","choices":["床本（ゆかほん）","譜面","番付","見台"],"answer":0,"explain":"太夫が用いる台本を「床本（ゆかほん）」といいます。"},
+{"id":"q_tayu_tools","cat":"太夫","q":"太夫が発声を安定させるため、下腹に巻く道具は？","choices":["腹帯","オトシ","尻引き","床本"],"answer":0,"explain":"下腹に腹帯を巻き、オトシ（おもり）を据え、尻引きをお尻に当てて座ります。","img":"tayu_tools"},
+{"id":"q_otoshi","cat":"太夫","q":"太夫が下半身を安定させるために据える「おもり」の名称は？","choices":["オトシ","腹帯","尻引き","朱"],"answer":0,"explain":"「オトシ」というおもりを据えて下半身を安定させます。"},
+{"id":"q_gidayu_founder","cat":"義太夫節","q":"義太夫節を始めた人物は？","choices":["竹本義太夫","近松門左衛門","近松半二","豊竹呂勢太夫"],"answer":0,"explain":"義太夫節は竹本義太夫（1651〜1714）が始めた音楽です。"},
+{"id":"q_takemotoza_place","cat":"義太夫節","q":"竹本義太夫が人形浄瑠璃の劇場「竹本座」を創設した場所は？","choices":["大坂の道頓堀","江戸の浅草","京都の四条","名古屋の大須"],"answer":0,"explain":"1684年、大坂の道頓堀に「竹本座」を創設しました。"},
+{"id":"q_takemotoza_year","cat":"義太夫節","q":"竹本座が創設された年は？","choices":["1684年","1603年","1780年","1840年"],"answer":0,"explain":"竹本座は1684年に創設されました。"},
+{"id":"q_chikamatsu_monzaemon","cat":"義太夫節","q":"竹本義太夫のために台本を書き、人気を支えた劇作家は？","choices":["近松門左衛門","近松半二","井原西鶴","世阿弥"],"answer":0,"explain":"近松門左衛門（1653〜1724）の台本を魅力的な声で語り、人気を博しました。"},
+{"id":"q_katarimono","cat":"義太夫節","q":"義太夫節は、物語を語って聞かせることを主体とした何という種類の音楽か？","choices":["語り物","謡い物","舞踊曲","管弦楽"],"answer":0,"explain":"義太夫節は「語り物」という音楽の一つです。"},
+{"id":"q_sanshin_gidayu","cat":"三味線","q":"義太夫節で用いる三味線の種類は？","choices":["太棹","細棹","中棹","胡弓"],"answer":0,"explain":"重厚な語りに負けないよう、棹が太く胴が大きい「太棹」を用います。"},
+{"id":"q_taizao","cat":"三味線","q":"太棹の三味線の音の特徴は？","choices":["音が低く、豊かな響きと余韻","高く鋭い金属音","音が出ない打楽器","電子的な音色"],"answer":0,"explain":"太棹は音が低く、豊かな響きと余韻が特徴です。","img":"sanshin"},
+{"id":"q_sanshin_types","cat":"三味線","q":"三味線は棹の太さによって主に3種類に分けられる。その3つは？","choices":["細棹・中棹・太棹","長棹・短棹・丸棹","高棹・低棹・中棹","木棹・竹棹・鉄棹"],"answer":0,"explain":"三味線は棹の太さで主に細棹・中棹・太棹に分けられます。","img":"sanshin"},
+{"id":"q_ningyo_people","cat":"人形","q":"文楽で1体の人形を操作する人数は？","choices":["3人","1人","2人","5人"],"answer":0,"explain":"文楽の人形は3人で操作します（三人遣い）。"},
+{"id":"q_ningyo_count","cat":"人形","q":"三人遣いで人形を操作する3つの役の正しい組み合わせは？","choices":["主遣い・左遣い・足遣い","頭遣い・胴遣い・手遣い","右遣い・左遣い・中遣い","面遣い・袖遣い・裾遣い"],"answer":0,"explain":"主遣い・左遣い・足遣いの3人で操作します。","img":"stage"},
+{"id":"q_omozukai","cat":"人形","q":"人形の首（かしら）と右手を操作する役は？","choices":["主遣い","左遣い","足遣い","太夫"],"answer":0,"explain":"主遣いが人形の首と右手を操作します。"},
+{"id":"q_hidarizukai","cat":"人形","q":"人形の左手を操作する役は？","choices":["左遣い","主遣い","足遣い","差し金"],"answer":0,"explain":"左遣いが人形の左手を操作します。"},
+{"id":"q_ashizukai","cat":"人形","q":"人形の足を操作する役は？","choices":["足遣い","主遣い","左遣い","囃子方"],"answer":0,"explain":"足遣いが人形の足を操作します。"},
+{"id":"q_ningyo_weight","cat":"人形","q":"文楽の人形1体のおよその重さは？","choices":["約10kg","約1kg","約50kg","約100g"],"answer":0,"explain":"1体の人形は約10kgにもなります。"},
+{"id":"q_shinpan_author","cat":"野崎村","q":"文楽「新版歌祭文」の作者は？","choices":["近松半二","近松門左衛門","竹本義太夫","豊竹呂勢太夫"],"answer":0,"explain":"「新版歌祭文」は近松半二の作です（近松門左衛門とは別人）。"},
+{"id":"q_nozaki_place","cat":"野崎村","q":"「野崎村の段」の舞台となる野崎村は、現在のどこか？","choices":["大阪府大東市","京都府京都市","兵庫県神戸市","奈良県奈良市"],"answer":0,"explain":"野崎村は現在の大阪府大東市にあたります。"},
+{"id":"q_okitsu_father","cat":"野崎村","q":"お光の父で、婚礼の準備をしていた人物は？","choices":["久作","久松","お染の母","近松半二"],"answer":0,"explain":"久作はお光の父です。"},
+{"id":"q_osome","cat":"野崎村","q":"久松と恋人どうしである、油屋の娘は？","choices":["お染","お光","お染の母","久作"],"answer":0,"explain":"お染は久松が奉公する油屋の娘で、2人は恋人どうしです。"},
+{"id":"q_hisamatsu","cat":"野崎村","q":"油屋に奉公し、お染と恋人どうしなのは？","choices":["久松","久作","主遣い","竹本義太夫"],"answer":0,"explain":"久松は油屋の奉公人で、お染の恋人です。"},
+{"id":"q_okitsu_end","cat":"野崎村","q":"物語でお光が最後に選んだ道は？","choices":["結婚を諦めて尼になる","久松と結婚する","大坂へ奉公に出る","三味線弾きになる"],"answer":0,"explain":"2人の思いを知ったお光は、結婚を諦めて尼になる決断をしました。"},
+{"id":"q_ending_travel","cat":"野崎村","q":"結末で、お染と久松が大坂へ帰る手段の組み合わせは？","choices":["お染は船、久松は駕籠","お染は駕籠、久松は船","2人とも船","2人とも徒歩"],"answer":0,"explain":"お染は母と船で、久松は駕籠で、それぞれ大坂に帰ります。"},
+{"id":"q_katariwake","cat":"表現","q":"1人の太夫が、お染・久松・お染の母など複数の人物をどう演じ分けるか？","choices":["語り分ける","踊り分ける","描き分ける","弾き分ける"],"answer":0,"explain":"1人の太夫が、人物の「らしさ」を工夫して語り分けます。"},
+{"id":"q_jokei","cat":"表現","q":"地の文の情景を生き生きと伝えるために工夫するのは誰か？","choices":["太夫と三味線","人形遣いと囃子","作者と観客","指揮者と合唱"],"answer":0,"explain":"太夫や三味線がさまざまな工夫をして情景を伝えます。"},
+{"id":"q_rosedayu","cat":"演奏","q":"教科書の「野崎村の段」を監修・採譜した文楽の太夫は？","choices":["豊竹呂勢太夫","竹本義太夫","近松半二","吉田玉男"],"answer":0,"explain":"豊竹呂勢太夫（人形浄瑠璃文楽 太夫）が監修・採譜しています。"},
+{"id":"q_hisaku_voice","cat":"演奏","q":"久作のセリフは、どのように語るとよいと演奏者は助言しているか？","choices":["年老いたお百姓らしく、遠くへ呼びかけるように少し高い声で","若い娘らしく小さな声で","怒ったように低くゆっくり","早口で平板に"],"answer":0,"explain":"久作は船の中の遠くの人へ呼びかけるので、年老いたお百姓の感じで少し高い声で語ります。"},
+{"id":"q_hayashi_inst","cat":"囃子","q":"囃子に用いる楽器の組み合わせとして正しいものは？","choices":["笛・小鼓・大鼓・太鼓","ピアノ・バイオリン・チェロ","箏・尺八・琵琶","ギター・ドラム・ベース"],"answer":0,"explain":"囃子は笛・小鼓・大鼓・太鼓などを用います。","img":"hayashi"},
+{"id":"q_hayashi_role","cat":"囃子","q":"囃子の主な役割は？","choices":["拍子をとり、気分や情景を盛り上げる","観客を誘導する","照明を操作する","台本を印刷する"],"answer":0,"explain":"囃子は拍子をとったり、気分や情景を盛り上げたりします。"},
+{"id":"q_shinpan_year","cat":"歴史","q":"文楽「新版歌祭文」が初演された年は？","choices":["1780年","1684年","1603年","1900年"],"answer":0,"explain":"「新版歌祭文」は1780年に初演されました（近松半二 作）。"},
+{"id":"q_city","cat":"歴史","q":"竹本義太夫が活動し、文楽が発展した都市は？","choices":["大坂（大阪）","江戸（東京）","京","博多"],"answer":0,"explain":"文楽は大坂の町人文化を背景に発展しました。"},
+{"id":"q_gidayu_duo","cat":"基礎","q":"義太夫節で、語りと演奏を担うのは？","choices":["太夫と三味線","太夫と人形","三味線と囃子","人形と囃子"],"answer":0,"explain":"義太夫節は太夫の語りと三味線の演奏で成り立ちます。"},
+{"id":"q_chikamatsu_pair","cat":"ひっかけ","q":"「新版歌祭文」の近松半二と、竹本義太夫に台本を書いた近松門左衛門の関係は？","choices":["別人の作者である","同一人物である","師弟ではなく無関係の同名","親子で同じ作品を書いた"],"answer":0,"explain":"近松半二（新版歌祭文）と近松門左衛門（義太夫節草創期の台本）は別人です。混同に注意。"},
+{"id":"q_taizao_use","cat":"三味線","q":"「太棹」の三味線が主に用いられる音楽は？","choices":["義太夫節（文楽）","長唄","童謡","西洋のオーケストラ"],"answer":0,"explain":"重厚な太棹は義太夫節（文楽）に用いられます。"},
+{"id":"q_tayu_posture","cat":"演奏","q":"太夫が語るときの姿勢として助言されているのは？","choices":["背筋を伸ばし、おなかの底から息を出す","背を丸めて小声で話す","立ったまま歩き回る","横になって語る"],"answer":0,"explain":"背筋を伸ばし、おなかの底から息を出すような感じで語ります。"},
+{"id":"q_ningyo_whole","cat":"基礎","q":"文楽で、太夫・三味線の音楽に合わせて動くのは？","choices":["人形","生身の役者","影絵","操り人形劇の機械仕掛けのみ"],"answer":0,"explain":"太夫と三味線（義太夫節）に人形遣いが呼吸を合わせ、人形が動きます。"}
+];
+
+const SET_SIZE = 15;
+const STORE_KEY = "bunraku_stats";
+const DAY = 86400000;
+
+/* ---------- 永続化（localStorage が使えなくても落ちない） ---------- */
+let stats = {};
+let storageOK = true;
+function loadStats(){
+  try{
+    const raw = localStorage.getItem(STORE_KEY);
+    const o = raw ? JSON.parse(raw) : {};
+    stats = (o && typeof o === "object" && !Array.isArray(o)) ? o : {};
+  }catch(e){ storageOK = false; stats = {}; }
+}
+function saveStats(){
+  try{ localStorage.setItem(STORE_KEY, JSON.stringify(stats)); return true; }
+  catch(e){ storageOK = false; return false; }
+}
+function clearStats(){
+  stats = {};
+  try{ localStorage.removeItem(STORE_KEY); }catch(e){ storageOK = false; }
+}
+function getStat(id){
+  const s = stats[id];
+  return s && typeof s.attempts === "number" ? s : {attempts:0, wrong:0, lastCorrect:null, lastSeen:0};
+}
+function record(id, correct){
+  const s = getStat(id);
+  stats[id] = {attempts:s.attempts+1, wrong:s.wrong+(correct?0:1), lastCorrect:!!correct, lastSeen:Date.now()};
+  if(!saveStats() && !record.warned){ record.warned = true; toast("保存できないため、この記録は今回のみ有効です"); }
+}
+
+/* ---------- 重み付き抽選 ---------- */
+function weight(q, now){
+  const s = getStat(q.id);
+  if(s.attempts === 0) return 100;                        // 未出題を最優先
+  const rate = s.wrong / s.attempts;
+  const days = Math.min((now - (s.lastSeen||0)) / DAY, 30);
+  let w = 1 + s.wrong*4 + rate*10 + days*0.5;              // 誤答多い・久しぶりほど高い
+  if(s.lastCorrect === false) w += 3;
+  return w;
+}
+function pickSet(pool, n){
+  const now = Date.now();
+  const items = pool.map(q => ({q, w: weight(q, now)}));
+  const out = [];
+  n = Math.min(n, items.length);
+  while(out.length < n){
+    let total = 0; for(const it of items) total += it.w;
+    let r = Math.random() * total, idx = items.length - 1;
+    for(let i=0;i<items.length;i++){ r -= items[i].w; if(r <= 0){ idx = i; break; } }
+    out.push(items[idx].q.id);
+    items.splice(idx,1);                                   // 重複なし
+  }
+  return out;
+}
+
+/* ---------- 小道具 ---------- */
+const $app = document.getElementById("app");
+function h(tag, attrs, ...kids){
+  const e = document.createElement(tag);
+  for(const k in (attrs||{})){
+    const v = attrs[k];
+    if(k === "class") e.className = v;
+    else if(k.startsWith("on")) e.addEventListener(k.slice(2), v);
+    else if(v !== false && v != null) e.setAttribute(k, v);
+  }
+  for(const c of kids.flat()){ if(c == null || c === false) continue; e.append(c.nodeType ? c : document.createTextNode(String(c))); }
+  return e;
+}
+let toastTimer;
+function toast(msg){
+  const t = document.getElementById("toast");
+  t.textContent = msg; t.classList.add("show");
+  clearTimeout(toastTimer); toastTimer = setTimeout(()=>t.classList.remove("show"), 2200);
+}
+const byId = {}; QUESTIONS.forEach(q => byId[q.id] = q);
+const pct = (a,b) => b ? Math.round(a/b*100) : 0;
+
+/* ---------- 状態 ---------- */
+let tab = "home";
+let session = null;   // {ids, idx, correct, answered, wrongIds, label, done}
+
+function startSet(pool, label){
+  if(!pool.length){ toast("出題できる問題がありません"); return; }
+  session = {ids: pickSet(pool, SET_SIZE), idx:0, correct:0, answered:false, wrongIds:[], label, done:false};
+  go("quiz");
+}
+function go(t){
+  tab = t; render();
+  document.querySelectorAll("nav button").forEach(b => b.classList.toggle("on", b.dataset.tab === t));
+  window.scrollTo(0,0);
+}
+function wrongPool(){ return QUESTIONS.filter(q => getStat(q.id).wrong > 0); }
+function render(){
+  $app.replaceChildren();
+  if(tab === "home") viewHome();
+  else if(tab === "quiz") viewQuiz();
+  else if(tab === "review") viewReview();
+  else viewStats();
+}
+
+/* ---------- ホーム ---------- */
+function totals(){
+  let att = 0, wr = 0, seen = 0;
+  for(const q of QUESTIONS){ const s = getStat(q.id); att += s.attempts; wr += s.wrong; if(s.attempts) seen++; }
+  return {att, wr, seen};
+}
+function viewHome(){
+  const t = totals();
+  $app.append(
+    h("h1",null,"文楽クイズ"),
+    h("p",{class:"sub"},"中3 音楽の定期試験対策。文楽（人形浄瑠璃）の問題に挑戦しよう。"),
+    h("div",{class:"card"},
+      h("h2",null,"1セット " + Math.min(SET_SIZE, QUESTIONS.length) + " 問"),
+      h("p",{class:"sub"},"未出題・苦手な問題が出やすくなります。繰り返すと全 " + QUESTIONS.length + " 問を網羅できます。"),
+      h("div",{class:"stats3"},
+        h("div",{class:"stat"},h("b",null,t.seen + "/" + QUESTIONS.length),"出題済み"),
+        h("div",{class:"stat"},h("b",null,t.att ? pct(t.att-t.wr,t.att) + "%" : "-"),"正答率"),
+        h("div",{class:"stat"},h("b",null,wrongPool().length),"苦手問題")),
+      h("button",{class:"btn",onclick:()=>startSet(QUESTIONS,"全問")},"クイズを始める"))
+  );
+  if(!storageOK) $app.append(h("div",{class:"card sub"},"この環境では記録を保存できません（ページを閉じると消えます）。"));
+}
+
+/* ---------- クイズ ---------- */
+function viewQuiz(){
+  if(!session){ viewHome(); return; }
+  if(session.done){ viewResult(); return; }
+  const q = byId[session.ids[session.idx]];
+  const total = session.ids.length;
+  const card = h("div",{class:"card"});
+  card.append(
+    h("div",{class:"sub"},session.label + "　" + (session.idx+1) + " / " + total),
+    h("div",{class:"bar"},h("i",{style:"display:block;width:" + (session.idx/total*100) + "%"})),
+    h("span",{class:"cat"},q.cat),
+    h("div",{class:"q"},q.q)
+  );
+  if(q.img){
+    const img = h("img",{class:"fig",src:"assets/img/" + q.img + ".png",alt:"教科書の図（補助）"});
+    img.addEventListener("error", () => img.remove());   // 画像は補助。失敗しても設問は成立
+    card.append(img);
+  }
+  const btns = q.choices.map((c,i) => h("button",{class:"choice",type:"button",onclick:()=>answer(i,btns,card,q)},c));
+  card.append(...btns);
+  $app.append(card);
+}
+function answer(i, btns, card, q){
+  if(session.answered) return;
+  session.answered = true;
+  const ok = i === q.answer;
+  if(ok) session.correct++; else session.wrongIds.push(q.id);
+  record(q.id, ok);
+  btns.forEach((b,k) => {
+    b.disabled = true;
+    if(k === q.answer) b.classList.add("ok");
+    else if(k === i) b.classList.add("ng");
+    else b.classList.add("dim");
+  });
+  const last = session.idx === session.ids.length - 1;
+  card.append(
+    h("div",{class:"explain" + (ok?"":" ng")},h("strong",null,ok?"⭕ 正解！":"❌ 不正解（正解：" + q.choices[q.answer] + "）"),q.explain),
+    h("button",{class:"btn",type:"button",onclick:()=>{
+      session.answered = false;
+      if(last) session.done = true; else session.idx++;
+      render(); window.scrollTo(0,0);
+    }},last ? "結果を見る" : "次の問題へ")
+  );
+}
+function viewResult(){
+  const n = session.ids.length;
+  const wrongQs = session.wrongIds.map(id => byId[id]);
+  $app.append(
+    h("div",{class:"card"},
+      h("h2",null,"結果"),
+      h("div",{class:"stats3"},
+        h("div",{class:"stat"},h("b",null,session.correct + " / " + n),"正解"),
+        h("div",{class:"stat"},h("b",null,pct(session.correct,n) + "%"),"正答率"),
+        h("div",{class:"stat"},h("b",null,wrongQs.length),"誤答")),
+      wrongQs.length
+        ? h("div",null,h("p",{class:"sub"},"間違えた問題"),h("ul",null,wrongQs.map(q => h("li",null,q.q))))
+        : h("p",null,"全問正解！おめでとう 🎉"),
+      h("div",{class:"row"},
+        h("button",{class:"btn",onclick:()=>startSet(QUESTIONS,"全問")},"もう1セット"),
+        h("button",{class:"btn sec",onclick:()=>{session=null;go("home");}},"ホームへ")))
+  );
+}
+
+/* ---------- 復習 ---------- */
+function viewReview(){
+  const list = wrongPool().map(q => ({q, s:getStat(q.id)}))
+    .sort((a,b) => (b.s.wrong/b.s.attempts) - (a.s.wrong/a.s.attempts) || b.s.wrong - a.s.wrong);
+  $app.append(h("h1",null,"復習（強化ポイント）"));
+  if(!list.length){
+    $app.append(h("div",{class:"card empty"},"まだ誤答はありません。クイズに挑戦しよう"));
+    return;
+  }
+  $app.append(
+    h("button",{class:"btn",onclick:()=>startSet(list.map(x=>x.q),"復習")},"誤答した問題で出題（最大" + SET_SIZE + "問）"),
+    h("p",{class:"sub"},"誤答率の高い順（" + list.length + "問）")
+  );
+  for(const {q,s} of list){
+    $app.append(h("div",{class:"card"},
+      h("span",{class:"cat"},q.cat),
+      h("div",{class:"q"},q.q),
+      h("div",{class:"sub"},"誤答 " + s.wrong + " / 出題 " + s.attempts + "（誤答率 " + pct(s.wrong,s.attempts) + "%）"),
+      h("div",{class:"explain"},h("strong",null,"正解：" + q.choices[q.answer]),q.explain)));
+  }
+}
+
+/* ---------- 統計 ---------- */
+function viewStats(){
+  const t = totals();
+  const rows = QUESTIONS.map(q => ({q, s:getStat(q.id)}));
+  $app.append(
+    h("h1",null,"統計"),
+    h("div",{class:"card"},
+      h("div",{class:"stats3"},
+        h("div",{class:"stat"},h("b",null,t.att),"出題総数"),
+        h("div",{class:"stat"},h("b",null,t.att - t.wr),"正解数"),
+        h("div",{class:"stat"},h("b",null,t.att ? pct(t.att-t.wr,t.att) + "%" : "-"),"全体の正答率"))),
+    h("div",{class:"card"},
+      h("h2",null,"問題別"),
+      h("div",{class:"tablewrap"},h("table",null,
+        h("thead",null,h("tr",null,h("th",null,"問題"),h("th",null,"出題"),h("th",null,"誤答"),h("th",null,"誤答率"))),
+        h("tbody",null,rows.map(({q,s}) => h("tr",null,
+          h("td",null,q.q),
+          h("td",null,s.attempts),
+          h("td",null,s.wrong),
+          h("td",{class:s.attempts && s.wrong/s.attempts >= 0.5 ? "rate-hi" : ""},s.attempts ? pct(s.wrong,s.attempts) + "%" : "-")))))),
+      h("button",{class:"btn danger",onclick:()=>{
+        if(confirm("累積の記録をすべて消去します。よろしいですか？")){
+          clearStats(); toast("累積をリセットしました"); render();
+        }
+      }},"累積をリセット"))
+  );
+}
+
+/* ---------- 起動 ---------- */
+document.querySelectorAll("nav button").forEach(b => b.addEventListener("click", () => {
+  const t = b.dataset.tab;
+  if(t === "quiz" && !session){ startSet(QUESTIONS,"全問"); return; }
+  go(t);
+}));
+loadStats();
+go("home");
+</script>
+</body>
+</html>
