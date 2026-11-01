@@ -1,0 +1,48 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Run Python and Save Result",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "${workspaceFolder}/main.py"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "Run Python and Pipe to Result File",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-Command",
+        "python ${workspaceFolder}/main.py *> ${workspaceFolder}/output/result.txt; Get-Content ${workspaceFolder}/output/result.txt"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      }
+    }
+  ]
+}

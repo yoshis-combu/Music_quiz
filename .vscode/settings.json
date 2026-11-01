@@ -1,0 +1,8 @@
+{
+  // Trigger Task on Save は無効化。
+  // Coder が Bash で python を直接実行するため、保存トリガーは使わない。
+  // 手動実行は Ctrl+Shift+B（tasks.json の "Run Python and Save Result"）。
+  // 再有効化する場合は triggerTaskOnSave.tasks に紐付けを復活させる。
+
+  "triggerTaskOnSave.tasks": {}
+}
